@@ -1,0 +1,240 @@
+<html>
+  <body onload="init();">
+    <style>
+    canvas {
+    	
+        width: 600px;
+        height: 900px;
+        background-color: #e8eef0;
+    } 
+	button {
+		width: 100px;
+		height: 40px;
+		align-self: center;
+		margin-left: 250px;
+		margin-top: 30px;
+
+	}
+	</style>
+
+<canvas id="board_canvas"></canvas>
+
+<script>
+
+    let miCanvas = document.querySelector('#board_canvas');
+    let lineas = [];
+    let correccionX = 0;
+    let correccionY = 0;
+    let pintarLinea = false;
+
+    let posicion = miCanvas.getBoundingClientRect()
+    correccionX = posicion.x;
+    correccionY = posicion.y;
+
+    miCanvas.width = 600;
+    miCanvas.height = 900;
+
+    //======================================================================
+    // FUNCIONES
+    //======================================================================
+
+    /**
+     * Funcion que empieza a dibujar la linea
+     */
+    function empezarDibujo () {
+        pintarLinea = true;
+        lineas.push([]);
+    };
+
+    /**
+     * Funcion dibuja la linea
+     */
+    function dibujarLinea (event) {
+        event.preventDefault();
+        if (pintarLinea) {
+            let ctx = miCanvas.getContext('2d')
+            // Estilos de linea
+            ctx.lineJoin = ctx.lineCap = 'round';
+            ctx.lineWidth = 6;
+            // Color de la linea
+            ctx.strokeStyle = '#56adca';
+            // Marca el nuevo punto
+            let nuevaPosicionX = 0;
+            let nuevaPosicionY = 0;
+            if (event.changedTouches == undefined) {
+                // Versión ratón
+                nuevaPosicionX = event.layerX;
+                nuevaPosicionY = event.layerY;
+            } else {
+                // Versión touch, pantalla tactil
+                nuevaPosicionX = event.changedTouches[0].pageX - correccionX;
+                nuevaPosicionY = event.changedTouches[0].pageY - correccionY;
+            }
+            // Guarda la linea
+
+           	trazo = {
+                x: nuevaPosicionX,
+                y: nuevaPosicionY
+            }
+
+            lineas[lineas.length - 1].push(trazo);
+            // Redibuja todas las lineas guardadas
+	            ctx.beginPath();
+	            lineas.forEach(function (segmento) {
+	            	if (segmento.length>=1){
+		                ctx.moveTo(segmento[0].x, segmento[0].y);
+		                segmento.forEach(function (punto, index) {
+		                    ctx.lineTo(punto.x, punto.y);
+		                });
+		            }
+	            });
+	            ctx.stroke();
+        	
+
+        }
+    }
+
+    /**
+     * Funcion que deja de dibujar la linea
+     */
+    function pararDibujar () {
+        pintarLinea = false;
+    }
+
+    //======================================================================
+    // EVENTOS
+    //======================================================================
+
+    // Eventos raton
+    miCanvas.addEventListener('mousedown', empezarDibujo, false);
+    miCanvas.addEventListener('mousemove', dibujarLinea, false);
+    miCanvas.addEventListener('mouseup', pararDibujar, false);
+
+    // Eventos pantallas táctiles
+    miCanvas.addEventListener('touchstart', empezarDibujo, false);
+    miCanvas.addEventListener('touchmove', dibujarLinea, false);
+    function over_handler(event) { 
+}
+function enter_handler(event) {
+
+}
+function down_handler(event) { 
+
+}
+function up_handler(event) { 
+	console.log("STOP")
+
+}
+function cancel_handler(event) { 
+
+
+}
+function out_handler(event) {
+
+
+}
+function leave_handler(event) { 
+
+}
+function gotcapture_handler(event) {
+
+
+}
+function lostcapture_handler(event) {
+
+}
+function save() {
+	data["time"][0] = 0
+	end_time = new Date().getTime();
+	console.log(end_time - start_time)
+	console.log(data)
+
+
+	var xhr = new XMLHttpRequest();
+	var url = "http://192.168.1.10:8080/api/data";
+	xhr.open("POST", url, true);
+	xhr.setRequestHeader("Content-Type", "application/json");
+
+	xhr.onreadystatechange = function() {
+    	if(xhr.readyState == 4 && xhr.status == 200) { 
+       //aqui obtienes la respuesta de tu peticion
+       		alert(xhr.responseText);
+          console.log(url)
+    	}
+	}
+
+	xhr.send(JSON.stringify(data));
+
+
+
+
+
+
+  }
+
+data = {
+  "posX": [], 
+  "posY" :[],
+  "pressure":[],
+  "velocity":[],
+  "movementX":[],
+  "movementY":[],
+  "time":[]
+};
+
+start_time = time = null;
+function move_handler(event) { 
+  if (start_time == null){
+    console.log("entro")
+    console.log(event)
+    start_time = time = new Date().getTime()-0.01;
+  }
+  // console.log(time)
+  time_1 = new Date().getTime();
+  time_delta = time_1 - time 
+  //console.log(time_delta)
+  time = time_1
+  
+  var posX = event.x
+  var posY = event.y
+  var pressure = event.pressure 
+  var movX = event.movementX
+  var movY = event.movementY
+
+  console.log(posX+ " | " +posY + " | " + pressure);
+  distance = (movX**2+movY**2)**(1/2)
+  velocity = distance/time_delta
+  // console.log(velocity +"px/ms")
+
+  data.posX.push(posX)
+  data.posY.push(posY)
+  data.movementX.push(movX)
+  data.movementY.push(movY)
+  data.pressure.push(pressure)
+  data.velocity.push(velocity)
+  data.time.push(time_1 - start_time)
+}
+  
+
+function init() {
+  let el = document.querySelector('#board_canvas');
+  // Register pointer event handlers
+  el.onpointerover = over_handler; //al momento de entrar
+   //el.onpointerenter = enter_handler; //lo mismo que el de arriba?
+   el.onpointerdown = down_handler; //cuando se toca la pantall?
+  el.onpointermove = move_handler; //movimiento?
+  el.onpointerup = up_handler; //cuando se levanta el dedo de la pantalla?
+  el.onpointercancel = cancel_handler;
+  el.onpointerout = out_handler;
+  el.onpointerleave = leave_handler;
+  el.gotpointercapture = gotcapture_handler;
+//el.lostpointercapture = lostcapture_handler;
+}
+
+</script>    
+    <div id="target" style="width: 100%; height: 1000px !important;">  
+      <button onclick="save()" style="align-self: flex-end;"> Guardar</button>
+    </div>
+      
+  </body>
+</html>
